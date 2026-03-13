@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeTrack — LeetCode Assignment Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10; --surface: #111318; --surface2: #181b22;
+    --border: #1e2330; --border2: #2a3044;
+    --accent: #f0b429; --accent2: #ff6b6b;
+    --green: #00e676; --blue: #4fc3f7; --purple: #b39ddb;
+    --text: #e8eaf0; --muted: #6b7280; --muted2: #9ca3af;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'JetBrains Mono',monospace; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(240,180,41,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(240,180,41,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+  .app { position:relative; z-index:1; display:flex; min-height:100vh; }
+
+  /* SIDEBAR */
+  .sidebar { width:220px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0; z-index:100; }
+  .logo { padding:24px 20px; border-bottom:1px solid var(--border); }
+  .logo-text { font-family:'Syne',sans-serif; font-weight:800; font-size:18px; color:var(--accent); }
+  .logo-sub { font-size:10px; color:var(--muted); margin-top:2px; letter-spacing:2px; }
+  .nav { padding:16px 0; flex:1; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:10px 20px; font-size:12px; font-weight:500; color:var(--muted); cursor:pointer; border-left:2px solid transparent; transition:all 0.2s; letter-spacing:0.5px; }
+  .nav-item:hover { color:var(--text); background:var(--surface2); }
+  .nav-item.active { color:var(--accent); border-left-color:var(--accent); background:rgba(240,180,41,0.05); }
+  .nav-item svg { width:16px; height:16px; flex-shrink:0; }
+
+  /* MAIN */
+  .main { margin-left:220px; flex:1; display:flex; flex-direction:column; }
+  .topbar { background:var(--surface); border-bottom:1px solid var(--border); padding:0 28px; height:60px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+  .page-title { font-family:'Syne',sans-serif; font-weight:700; font-size:16px; }
+  .topbar-actions { display:flex; gap:8px; align-items:center; }
+  .content { padding:28px; flex:1; }
+
+  /* TABS */
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  /* STATS ROW */
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px; position:relative; overflow:hidden; }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+  .stat-card.yellow::before { background:var(--accent); }
+  .stat-card.green::before { background:var(--green); }
+  .stat-card.blue::before { background:var(--blue); }
+  .stat-card.purple::before { background:var(--purple); }
+  .stat-label { font-size:10px; color:var(--muted); letter-spacing:1.5px; margin-bottom:6px; }
+  .stat-value { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; }
+  .stat-card.yellow .stat-value { color:var(--accent); }
+  .stat-card.green .stat-value { color:var(--green); }
+  .stat-card.blue .stat-value { color:var(--blue); }
+  .stat-card.purple .stat-value { color:var(--purple); }
+
+  /* SECTION */
+  .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .section-title { font-family:'Syne',sans-serif; font-weight:700; font-size:14px; }
+
+  /* BUTTONS */
+  .btn { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:500; padding:8px 14px; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:6px; }
+  .btn-primary { background:var(--accent); color:#0a0c10; }
+  .btn-primary:hover { background:#ffc94d; transform:translateY(-1px); }
+  .btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border2); }
+  .btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-danger { background:rgba(255,107,107,0.1); color:var(--accent2); border:1px solid rgba(255,107,107,0.25); }
+  .btn-danger:hover { background:rgba(255,107,107,0.2); }
+  .btn-green { background:rgba(0,230,118,0.12); color:var(--green); border:1px solid rgba(0,230,118,0.25); }
+  .btn-green:hover { background:rgba(0,230,118,0.22); }
+  .btn-blue { background:rgba(79,195,247,0.12); color:var(--blue); border:1px solid rgba(79,195,247,0.25); }
+  .btn-blue:hover { background:rgba(79,195,247,0.22); }
+  .btn-sm { padding:5px 10px; font-size:10px; }
+
+  /* TABLE */
+  .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead { background:var(--surface2); }
+  th { padding:11px 14px; font-size:10px; font-weight:600; color:var(--muted); text-align:left; letter-spacing:1.5px; border-bottom:1px solid var(--border); }
+  td { padding:11px 14px; font-size:12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:rgba(255,255,255,0.015); }
+
+  /* BADGES */
+  .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:4px; font-size:10px; font-weight:600; letter-spacing:0.5px; }
+  .badge-easy { background:rgba(0,230,118,0.12); color:var(--green); border:1px solid rgba(0,230,118,0.2); }
+  .badge-medium { background:rgba(240,180,41,0.12); color:var(--accent); border:1px solid rgba(240,180,41,0.2); }
+  .badge-hard { background:rgba(255,107,107,0.12); color:var(--accent2); border:1px solid rgba(255,107,107,0.2); }
+  .badge-done { background:rgba(0,230,118,0.12); color:var(--green); border:1px solid rgba(0,230,118,0.2); }
+  .badge-pending { background:rgba(107,114,128,0.12); color:var(--muted2); border:1px solid rgba(107,114,128,0.2); }
+
+  /* MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); z-index:200; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border2); border-radius:12px; width:620px; max-width:96vw; max-height:88vh; overflow-y:auto; animation:slideUp 0.2s ease; }
+  @keyframes slideUp { from { transform:translateY(16px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+  .modal-header { padding:18px 22px 14px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:var(--surface); z-index:5; }
+  .modal-title { font-family:'Syne',sans-serif; font-weight:700; font-size:15px; }
+  .modal-close { width:26px; height:26px; background:var(--surface2); border:1px solid var(--border); border-radius:5px; cursor:pointer; color:var(--muted); font-size:14px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+  .modal-close:hover { color:var(--text); }
+  .modal-body { padding:20px 22px; }
+
+  /* FORM */
+  .form-group { margin-bottom:14px; }
+  .form-label { display:block; font-size:11px; color:var(--muted2); margin-bottom:5px; letter-spacing:0.5px; }
+  .form-input, .form-select { width:100%; background:var(--surface2); border:1px solid var(--border2); border-radius:6px; padding:8px 11px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text); outline:none; transition:border-color 0.15s; }
+  .form-input:focus, .form-select:focus { border-color:var(--accent); }
+  .form-select option { background:var(--surface2); }
+  .form-row { display:grid; gap:12px; }
+
+  /* STUDENT GRID */
+  .student-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
+  .student-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px; transition:all 0.2s; }
+  .student-card:hover { border-color:var(--border2); transform:translateY(-2px); }
+  .student-avatar { width:38px; height:38px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:800; font-size:15px; margin-bottom:10px; }
+  .student-name { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; margin-bottom:2px; }
+  .student-roll { font-size:11px; color:var(--muted); margin-bottom:6px; }
+  .student-lc { font-size:11px; color:var(--blue); }
+  .student-stats { display:flex; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+  .s-stat { text-align:center; flex:1; }
+  .s-stat-val { font-family:'Syne',sans-serif; font-weight:700; font-size:15px; }
+  .s-stat-lbl { font-size:9px; color:var(--muted); letter-spacing:1px; }
+  .student-actions { display:flex; gap:6px; margin-top:10px; }
+
+  /* PROB ITEM */
+  .prob-item { display:flex; align-items:center; gap:10px; padding:10px 13px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; margin-bottom:7px; transition:border-color 0.15s; }
+  .prob-item:hover { border-color:var(--border2); }
+  .prob-num { font-size:11px; color:var(--muted); width:36px; flex-shrink:0; }
+  .prob-name { flex:1; font-size:12px; }
+  .prob-name a { color:var(--blue); text-decoration:none; }
+  .prob-name a:hover { text-decoration:underline; }
+
+  /* DROPDOWN */
+  .dropdown-wrap { position:relative; display:inline-block; }
+  .dropdown-content { display:none; position:absolute; top:100%; left:0; background:var(--surface2); border:1px solid var(--border2); border-radius:8px; min-width:300px; max-height:280px; overflow-y:auto; z-index:100; margin-top:4px; box-shadow:0 8px 24px rgba(0,0,0,0.5); }
+  .dropdown-wrap:hover .dropdown-content, .dropdown-content:hover { display:block; }
+  .dropdown-item { padding:9px 13px; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); transition:background 0.1s; }
+  .dropdown-item:last-child { border-bottom:none; }
+  .dropdown-item:hover { background:var(--surface); }
+  .dropdown-label { font-size:10px; padding:7px 13px; color:var(--muted); letter-spacing:1px; border-bottom:1px solid var(--border); }
+
+  /* CHECK BUTTON */
+  .check-btn { width:28px; height:28px; border-radius:6px; border:1.5px solid var(--border2); background:var(--surface2); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; font-size:13px; }
+  .check-btn.done { background:rgba(0,230,118,0.12); border-color:var(--green); color:var(--green); }
+  .check-btn:hover { border-color:var(--green); }
+
+  /* SEARCH */
+  .search-wrap { position:relative; }
+  .search-input { background:var(--surface2); border:1px solid var(--border2); border-radius:6px; padding:7px 11px 7px 30px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text); outline:none; width:180px; transition:all 0.15s; }
+  .search-input:focus { border-color:var(--accent); width:220px; }
+  .search-icon { position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:12px; }
+
+  /* COMPLETERS */
+  .completers-wrap { margin-top:10px; }
+  .completer-row { display:flex; align-items:center; gap:10px; padding:8px 11px; border-radius:6px; background:var(--surface2); margin-bottom:5px; font-size:11px; }
+  .completer-dot { width:7px; height:7px; border-radius:50%; background:var(--green); flex-shrink:0; }
+
+  /* PROGRESS */
+  .progress-bar { height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .progress-fill { height:100%; background:var(--green); border-radius:2px; transition:width 0.3s; }
+
+  /* ASSIGN PANEL */
+  .assign-panel { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; margin-bottom:20px; }
+
+  /* TOAST */
+  .toast-container { position:fixed; bottom:20px; right:20px; z-index:500; display:flex; flex-direction:column; gap:7px; }
+  .toast { background:var(--surface2); border:1px solid var(--border2); border-radius:8px; padding:11px 14px; font-size:11px; min-width:210px; animation:toastIn 0.2s ease; display:flex; align-items:center; gap:8px; }
+  @keyframes toastIn { from { transform:translateX(16px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+  .toast.success { border-color:rgba(0,230,118,0.3); }
+  .toast.error { border-color:rgba(255,107,107,0.3); }
+  .toast.success .toast-icon { color:var(--green); }
+  .toast.error .toast-icon { color:var(--accent2); }
+
+  /* LC STATS PANEL */
+  .lc-profile-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px; }
+  .lc-stat-box { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px; }
+  .lc-stat-box-title { font-size:10px; color:var(--muted); letter-spacing:1px; margin-bottom:10px; }
+  
+  /* SOLVE RING */
+  .solve-rings { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .ring-item { text-align:center; }
+  .ring-label { font-size:9px; color:var(--muted); letter-spacing:1px; margin-top:5px; }
+
+  /* HEATMAP */
+  .heatmap-grid { display:flex; gap:2px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; }
+  .heatmap-col { display:flex; flex-direction:column; gap:2px; }
+  .heatmap-cell { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+
+  /* LANG BAR */
+  .lang-bar { display:flex; flex-direction:column; gap:7px; }
+  .lang-row { display:flex; align-items:center; gap:8px; font-size:11px; }
+  .lang-name { width:80px; color:var(--muted2); flex-shrink:0; font-size:10px; }
+  .lang-fill-wrap { flex:1; background:var(--border); border-radius:3px; height:5px; overflow:hidden; }
+  .lang-fill { height:100%; border-radius:3px; }
+  .lang-count { width:30px; text-align:right; color:var(--muted); font-size:10px; flex-shrink:0; }
+
+  /* BADGES ROW */
+  .badges-row { display:flex; flex-wrap:wrap; gap:8px; }
+  .lc-badge { background:var(--surface2); border:1px solid var(--border2); border-radius:8px; padding:8px 12px; font-size:10px; display:flex; align-items:center; gap:6px; color:var(--muted2); }
+  .lc-badge-icon { font-size:16px; }
+
+  /* TAG CHIPS */
+  .tag-chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .tag-chip { background:var(--surface2); border:1px solid var(--border2); border-radius:4px; padding:3px 8px; font-size:10px; color:var(--muted2); }
+
+  /* EMAIL SETTINGS */
+  .settings-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .settings-section { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; }
+  .settings-section-title { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+
+  /* NOTIFICATION LOG */
+  .notif-log { max-height:240px; overflow-y:auto; }
+  .notif-item { padding:9px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; margin-bottom:6px; font-size:11px; display:flex; align-items:flex-start; gap:10px; }
+  .notif-icon { font-size:14px; flex-shrink:0; }
+  .notif-time { font-size:10px; color:var(--muted); margin-top:2px; }
+
+  .empty-state { text-align:center; padding:40px 20px; color:var(--muted); }
+  .empty-state .empty-icon { font-size:32px; margin-bottom:10px; opacity:0.4; }
+  .empty-state p { font-size:12px; }
+  .tag { display:inline-block; background:var(--surface2); border:1px solid var(--border2); border-radius:4px; padding:2px 6px; font-size:10px; color:var(--muted2); }
+
+  ::-webkit-scrollbar { width:5px; height:5px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-text">CodeTrack</div>
+    <div class="logo-sub">ASSIGNMENT MANAGER</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" onclick="showTab('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      DASHBOARD
+    </div>
+    <div class="nav-item" onclick="showTab('problems')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      PROBLEMS
+    </div>
+    <div class="nav-item" onclick="showTab('students')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      STUDENTS
+    </div>
+    <div class="nav-item" onclick="showTab('status')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      STATUS CHECK
+    </div>
+    <div class="nav-item" onclick="showTab('notifications')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      NOTIFICATIONS
+    </div>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="page-title" id="pageTitle">Dashboard</div>
+    <div class="topbar-actions">
+      <span id="serverBadge" style="font-size:10px;letter-spacing:1px;padding:3px 8px;border-radius:4px;border:1px solid var(--border2);color:var(--muted)">○ CHECKING...</span>
+      <button class="btn btn-green btn-sm" id="syncBtn" onclick="syncFromLeetCode()">⟳ SYNC LC</button>
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input class="search-input" placeholder="Search..." id="globalSearch" oninput="handleSearch(this.value)">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openTopModal()">+ ADD</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="tab-panel active" id="tab-dashboard">
+      <div class="stats-row">
+        <div class="stat-card yellow"><div class="stat-label">TOTAL PROBLEMS</div><div class="stat-value" id="stat-problems">0</div></div>
+        <div class="stat-card blue"><div class="stat-label">TOTAL STUDENTS</div><div class="stat-value" id="stat-students">0</div></div>
+        <div class="stat-card green"><div class="stat-label">SUBMISSIONS</div><div class="stat-value" id="stat-submissions">0</div></div>
+        <div class="stat-card purple"><div class="stat-label">COMPLETION %</div><div class="stat-value" id="stat-completion">0%</div></div>
+      </div>
+      <div class="section-header"><div class="section-title">Recent Assignments</div></div>
+      <div class="table-wrap" style="margin-bottom:24px">
+        <table><thead><tr><th>ID</th><th>TITLE</th><th>DIFFICULTY</th><th>DATE</th><th>COMPLETED</th><th>PROGRESS</th></tr></thead>
+        <tbody id="dashboardTable"><tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📋</div><p>No problems assigned yet</p></div></td></tr></tbody></table>
+      </div>
+      <div class="section-header"><div class="section-title">🏆 Top Performers</div></div>
+      <div class="table-wrap">
+        <table><thead><tr><th>RANK</th><th>STUDENT</th><th>ROLL NO</th><th>SOLVED</th><th>STREAK</th><th>LAST ACTIVE</th></tr></thead>
+        <tbody id="leaderboard"><tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🏆</div><p>Add students to see leaderboard</p></div></td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- PROBLEMS -->
+    <div class="tab-panel" id="tab-problems">
+      <div class="assign-panel">
+        <div class="section-title" style="margin-bottom:14px">Assign New Problem</div>
+        <div style="display:grid;grid-template-columns:80px 1fr 100px 120px 120px auto;gap:10px;align-items:end">
+          <div class="form-group" style="margin:0"><label class="form-label">LC ID</label><input class="form-input" id="p-id" placeholder="1" type="number"></div>
+          <div class="form-group" style="margin:0"><label class="form-label">TITLE</label><input class="form-input" id="p-title" placeholder="Two Sum"></div>
+          <div class="form-group" style="margin:0"><label class="form-label">DIFFICULTY</label><select class="form-select" id="p-diff"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></div>
+          <div class="form-group" style="margin:0"><label class="form-label">TOPIC</label><input class="form-input" id="p-topic" placeholder="Array, DP..."></div>
+          <div class="form-group" style="margin:0"><label class="form-label">DEADLINE</label><input class="form-input" id="p-deadline" type="date"></div>
+          <button class="btn btn-primary" onclick="addProblem()">ASSIGN</button>
+        </div>
+      </div>
+      <div class="section-header"><div class="section-title">Assigned Problems</div><span id="prob-count" style="font-size:11px;color:var(--muted)">0 problems</span></div>
+      <div id="problemsList"><div class="empty-state"><div class="empty-icon">💻</div><p>No problems assigned yet</p></div></div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div class="tab-panel" id="tab-students">
+      <div style="display:flex;gap:0;margin-bottom:18px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;width:fit-content">
+        <button id="modeSingle" onclick="switchMode('single')" style="padding:8px 20px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;border:none;cursor:pointer;letter-spacing:0.5px;background:var(--accent);color:#0a0c10">SINGLE ADD</button>
+        <button id="modeBulk" onclick="switchMode('bulk')" style="padding:8px 20px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;border:none;cursor:pointer;letter-spacing:0.5px;background:var(--surface2);color:var(--muted)">BULK IMPORT</button>
+      </div>
+      <div id="panelSingle" class="assign-panel">
+        <div class="section-title" style="margin-bottom:14px">Add Single Student</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end">
+          <div class="form-group" style="margin:0"><label class="form-label">FULL NAME</label><input class="form-input" id="s-name" placeholder="John Doe"></div>
+          <div class="form-group" style="margin:0"><label class="form-label">ROLL NO</label><input class="form-input" id="s-roll" placeholder="CS2024001"></div>
+          <div class="form-group" style="margin:0"><label class="form-label">LEETCODE ID</label><input class="form-input" id="s-lc" placeholder="lc_username"></div>
+          <div class="form-group" style="margin:0"><label class="form-label">EMAIL (optional)</label><input class="form-input" id="s-email" placeholder="student@email.com" type="email"></div>
+          <button class="btn btn-primary" id="addStudentBtn" onclick="addStudent()">ADD</button>
+        </div>
+      </div>
+      <div id="panelBulk" class="assign-panel" style="display:none">
+        <div class="section-title" style="margin-bottom:6px">Bulk Import — All 67 Students at Once</div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:14px">Paste CSV below. One student per line. Works with Excel copy-paste.</p>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:11px;color:var(--muted2)">FORMAT:</span>
+          <button class="btn btn-primary btn-sm" id="fmt1" onclick="setFormat('name,roll,lc')">Name, Roll, LeetCode</button>
+          <button class="btn btn-secondary btn-sm" id="fmt2" onclick="setFormat('name,roll,lc,email')">Name, Roll, LeetCode, Email</button>
+          <button class="btn btn-secondary btn-sm" id="fmt3" onclick="setFormat('roll,name,lc')">Roll, Name, LeetCode</button>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:10px 12px;font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.8">
+          <strong style="color:var(--accent)">Example:</strong><br>
+          Aryan Sharma, CS2024001, aryan_lc<br>
+          Priya Nair, CS2024002, priya_codes<br>
+          <span style="color:var(--muted2)">Comma / semicolon / tab separated all work. Excel paste works too!</span>
+        </div>
+        <textarea id="bulkInput" class="form-input" style="height:180px;resize:vertical;font-size:11px;line-height:1.7" placeholder="Paste your 67 students here..."></textarea>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn btn-primary" style="flex:1" onclick="previewBulk()">👁 PREVIEW</button>
+          <button class="btn btn-green" style="flex:1" id="bulkImportBtn" onclick="importBulk()" disabled>⬇ IMPORT ALL</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('bulkInput').value='';document.getElementById('bulkPreview').style.display='none';document.getElementById('bulkImportBtn').disabled=true">CLEAR</button>
+        </div>
+        <div id="bulkPreview" style="margin-top:16px;display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div class="section-title" id="bulkPreviewTitle">Preview</div>
+            <span style="font-size:11px;color:var(--muted)" id="bulkPreviewStats"></span>
+          </div>
+          <div class="table-wrap" style="max-height:280px;overflow-y:auto">
+            <table><thead><tr><th>#</th><th>NAME</th><th>ROLL NO</th><th>LEETCODE ID</th><th>EMAIL</th><th>STATUS</th></tr></thead>
+            <tbody id="bulkPreviewBody"></tbody></table>
+          </div>
+        </div>
+      </div>
+      <div class="section-header" style="margin-top:4px">
+        <div class="section-title">Students</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="student-count" style="font-size:11px;color:var(--muted)">0 students</span>
+          <button class="btn btn-danger btn-sm" id="clearStudentsBtn" onclick="clearAllStudents()" style="display:none">CLEAR ALL</button>
+        </div>
+      </div>
+      <div class="student-grid" id="studentGrid"><div style="grid-column:1/-1"><div class="empty-state"><div class="empty-icon">&#x1F393;</div><p>No students added yet</p></div></div></div>
+    </div>
+
+    <!-- STATUS CHECK -->
+    <div class="tab-panel" id="tab-status">
+      <div class="section-header" style="margin-bottom:18px">
+        <div><div class="section-title">Status Check</div><p style="font-size:11px;color:var(--muted);margin-top:3px">Mark & track who solved what</p></div>
+        <select class="form-select" id="filterProblem" style="width:220px" onchange="renderStatusTable()"><option value="">All Problems</option></select>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>STUDENT</th><th>ROLL NO</th><th>LEETCODE ID</th><th>PROBLEM</th><th>STATUS</th><th>SOLVED AT</th><th>LANG</th><th>✓</th></tr></thead>
+        <tbody id="statusTable"><tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📊</div><p>Add students and problems first</p></div></td></tr></tbody></table>
+      </div>
+      <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <div><div class="section-header"><div class="section-title">✅ Completed By</div></div><div id="completersList" class="completers-wrap"><p style="font-size:11px;color:var(--muted)">Filter by problem to see completers</p></div></div>
+        <div><div class="section-header"><div class="section-title">⏳ Pending</div></div><div id="pendingList" class="completers-wrap"><p style="font-size:11px;color:var(--muted)">Filter by problem to see pending</p></div></div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="tab-panel" id="tab-notifications">
+      <div class="settings-grid" style="margin-bottom:20px">
+        <div class="settings-section">
+          <div class="settings-section-title">✉ Email Config (SMTP)</div>
+          <div class="form-group"><label class="form-label">SMTP HOST</label><input class="form-input" id="cfg-host" placeholder="smtp.gmail.com"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group"><label class="form-label">PORT</label><input class="form-input" id="cfg-port" placeholder="587" type="number"></div>
+            <div class="form-group"><label class="form-label">SECURE</label><select class="form-select" id="cfg-secure"><option value="false">STARTTLS (587)</option><option value="true">SSL (465)</option></select></div>
+          </div>
+          <div class="form-group"><label class="form-label">EMAIL ADDRESS</label><input class="form-input" id="cfg-user" placeholder="your@gmail.com" type="email"></div>
+          <div class="form-group"><label class="form-label">APP PASSWORD</label><input class="form-input" id="cfg-pass" placeholder="Gmail App Password" type="password"></div>
+          <div class="form-group"><label class="form-label">STAFF NOTIFY EMAIL</label><input class="form-input" id="cfg-staff" placeholder="staff@college.edu" type="email"></div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn btn-primary" style="flex:1" onclick="saveEmailConfig()">SAVE CONFIG</button>
+            <button class="btn btn-secondary" onclick="testEmail()">SEND TEST</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">🔔 Notification Settings</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+            <label style="display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer">
+              <input type="checkbox" id="notif-on-complete" checked style="accent-color:var(--accent)">
+              Notify staff when student completes
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer">
+              <input type="checkbox" id="notif-student-email" checked style="accent-color:var(--accent)">
+              Email student on completion
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer">
+              <input type="checkbox" id="notif-all-done" checked style="accent-color:var(--accent)">
+              Special email when ALL students complete
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer">
+              <input type="checkbox" id="notif-manual-only" style="accent-color:var(--accent)">
+              Only notify for manual marks (not LC sync)
+            </label>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;color:var(--muted);line-height:1.6">
+            <strong style="color:var(--muted2)">Gmail setup:</strong><br>
+            1. Enable 2FA on your Google account<br>
+            2. Go to Google Account → Security → App Passwords<br>
+            3. Create an app password for "Mail"<br>
+            4. Use that 16-char password above
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header"><div class="section-title">📬 Notification Log</div><button class="btn btn-danger btn-sm" onclick="clearLog()">CLEAR</button></div>
+      <div class="notif-log" id="notifLog">
+        <div class="empty-state"><div class="empty-icon">📭</div><p>No notifications sent yet</p></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+</div>
+
+<!-- STUDENT DETAIL MODAL -->
+<div class="modal-overlay" id="studentModal">
+  <div class="modal" style="width:680px">
+    <div class="modal-header">
+      <div class="modal-title" id="studentModalTitle">Student Details</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-blue btn-sm" id="modalSyncBtn">⟳ SYNC FROM LC</button>
+        <div class="modal-close" onclick="closeModal('studentModal')">✕</div>
+      </div>
+    </div>
+    <div class="modal-body" id="studentModalBody"></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ===== STATE =====
+let state = { problems:[], students:[], completions:{}, emailConfig:{}, notifLog:[] };
+try { const s = localStorage.getItem('codetrack2'); if(s) state = {...state, ...JSON.parse(s)}; } catch(e){}
+function save() { try { localStorage.setItem('codetrack2', JSON.stringify(state)); } catch(e){} }
+
+const API = 'http://localhost:3001';
+let serverOnline = false;
+const COLORS = ['#f0b429','#00e676','#4fc3f7','#b39ddb','#ff6b6b','#26c6da','#ffb74d','#ef9a9a'];
+
+// ===== NAV =====
+let currentTab = 'dashboard';
+function showTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const tabs = ['dashboard','problems','students','status','notifications'];
+  document.querySelectorAll('.nav-item')[tabs.indexOf(tab)]?.classList.add('active');
+  currentTab = tab;
+  const titles = {dashboard:'Dashboard',problems:'Problems',students:'Students',status:'Status Check',notifications:'Notifications'};
+  document.getElementById('pageTitle').textContent = titles[tab]||tab;
+  if(tab==='notifications') loadEmailConfig();
+  renderAll();
+}
+function openTopModal() {
+  if(currentTab==='problems') focusInput('p-id');
+  else if(currentTab==='students') focusInput('s-name');
+  else showTab('problems');
+}
+function focusInput(id) { const el=document.getElementById(id); if(el){el.focus();el.scrollIntoView({behavior:'smooth'});} }
+
+// ===== PROBLEMS =====
+function addProblem() {
+  const id=document.getElementById('p-id').value.trim();
+  const title=document.getElementById('p-title').value.trim();
+  const diff=document.getElementById('p-diff').value;
+  const topic=document.getElementById('p-topic').value.trim();
+  const deadline=document.getElementById('p-deadline').value;
+  if(!id||!title) return toast('Fill Problem ID and Title','error');
+  if(state.problems.find(p=>p.id===id)) return toast('Problem ID already exists','error');
+  state.problems.push({id,title,diff,topic,deadline,date:new Date().toLocaleDateString('en-IN')});
+  save();
+  ['p-id','p-title','p-topic','p-deadline'].forEach(x=>document.getElementById(x).value='');
+  toast('Problem assigned ✓');
+  renderAll();
+}
+function removeProblem(id) {
+  state.problems=state.problems.filter(p=>p.id!==id);
+  Object.keys(state.completions).forEach(k=>{if(k.endsWith('_'+id)) delete state.completions[k];});
+  save(); toast('Problem removed'); renderAll();
+}
+function renderProblems() {
+  const list=document.getElementById('problemsList');
+  document.getElementById('prob-count').textContent=state.problems.length+' problem'+(state.problems.length!==1?'s':'');
+  if(!state.problems.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">💻</div><p>No problems assigned yet</p></div>';return;}
+  list.innerHTML=state.problems.map(p=>{
+    const done=state.students.filter(s=>state.completions[s.id+'_'+p.id]).length;
+    const total=state.students.length;
+    const pct=total?Math.round(done/total*100):0;
+    const deadlineHtml=p.deadline?`<span class="tag" style="margin-left:6px">📅 ${p.deadline}</span>`:'';
+    return `<div class="prob-item">
+      <div class="prob-num">#${p.id}</div>
+      <div class="prob-name"><a href="https://leetcode.com/problems/${p.title.toLowerCase().replace(/\s+/g,'-')}/" target="_blank">${p.title}</a>
+        ${p.topic?`<span class="tag" style="margin-left:6px">${p.topic}</span>`:''}${deadlineHtml}</div>
+      <span class="badge badge-${p.diff.toLowerCase()}">${p.diff}</span>
+      <span style="font-size:11px;color:var(--muted);min-width:72px;text-align:right">${done}/${total}</span>
+      <div style="width:72px"><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></div>
+      <span style="font-size:10px;color:var(--muted);min-width:34px;text-align:right">${pct}%</span>
+      <button class="btn btn-danger btn-sm" onclick="removeProblem('${p.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ===== STUDENTS =====
+async function addStudent() {
+  const name=document.getElementById('s-name').value.trim();
+  const roll=document.getElementById('s-roll').value.trim();
+  const lc=document.getElementById('s-lc').value.trim();
+  const email=document.getElementById('s-email').value.trim();
+  if(!name||!roll||!lc) return toast('Name, Roll and LeetCode ID are required','error');
+  if(state.students.find(s=>s.roll===roll)) return toast('Roll number already exists','error');
+
+  if(serverOnline&&lc) {
+    const btn=document.getElementById('addStudentBtn');
+    btn.textContent='VERIFYING...'; btn.disabled=true;
+    const profile=await verifyLCProfile(lc);
+    btn.textContent='ADD'; btn.disabled=false;
+    if(!profile) return toast(`LeetCode user "${lc}" not found!`,'error');
+    toast(`Verified: ${profile.realName||lc} (${profile.solved.total} solved) ✓`);
+  }
+
+  const id='S'+Date.now();
+  state.students.push({id,name,roll,lc,email,added:new Date().toLocaleDateString('en-IN')});
+  save();
+  ['s-name','s-roll','s-lc','s-email'].forEach(x=>document.getElementById(x).value='');
+  toast('Student added ✓'); renderAll();
+}
+function removeStudent(id) {
+  state.students=state.students.filter(s=>s.id!==id);
+  Object.keys(state.completions).forEach(k=>{if(k.startsWith(id+'_')) delete state.completions[k];});
+  save(); toast('Student removed'); renderAll();
+}
+function renderStudents() {
+  const grid=document.getElementById('studentGrid');
+  document.getElementById('student-count').textContent=state.students.length+' student'+(state.students.length!==1?'s':'');
+  if(!state.students.length){grid.innerHTML='<div style="grid-column:1/-1"><div class="empty-state"><div class="empty-icon">👨‍🎓</div><p>No students added yet</p></div></div>';return;}
+  grid.innerHTML=state.students.map((s,i)=>{
+    const solved=state.problems.filter(p=>state.completions[s.id+'_'+p.id]).length;
+    const color=COLORS[i%COLORS.length];
+    const initials=s.name.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);
+    const streak=state.lcCache?.[s.lc]?.streak?.current||0;
+    return `<div class="student-card">
+      <div class="student-avatar" style="background:${color}22;color:${color}">${initials}</div>
+      <div class="student-name">${s.name}</div>
+      <div class="student-roll">${s.roll} ${s.email?'· '+s.email:''}</div>
+      <div class="student-lc">⌨ ${s.lc}</div>
+      <div class="student-stats">
+        <div class="s-stat"><div class="s-stat-val" style="color:var(--green)">${solved}</div><div class="s-stat-lbl">SOLVED</div></div>
+        <div class="s-stat"><div class="s-stat-val" style="color:var(--accent2)">${state.problems.length-solved}</div><div class="s-stat-lbl">PENDING</div></div>
+        <div class="s-stat"><div class="s-stat-val" style="color:var(--accent)">${streak}🔥</div><div class="s-stat-lbl">STREAK</div></div>
+      </div>
+      <div class="student-actions">
+        <button class="btn btn-secondary btn-sm" style="flex:1" onclick="showStudentDetail('${s.id}')">VIEW STATS</button>
+        <button class="btn btn-blue btn-sm" onclick="syncStudentProfile('${s.id}')">⟳</button>
+        <button class="btn btn-danger btn-sm" onclick="removeStudent('${s.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== STUDENT DETAIL MODAL =====
+let modalStudentId = null;
+async function showStudentDetail(sid) {
+  modalStudentId = sid;
+  const s=state.students.find(x=>x.id===sid);
+  if(!s) return;
+  document.getElementById('studentModalTitle').textContent=`${s.name} — ${s.roll}`;
+  document.getElementById('modalSyncBtn').onclick=()=>syncStudentProfile(sid, true);
+
+  const cache=state.lcCache?.[s.lc];
+  renderStudentModal(s, cache);
+  document.getElementById('studentModal').classList.add('open');
+
+  if(serverOnline && !cache) {
+    await syncStudentProfile(sid, true);
+  }
+}
+
+function renderStudentModal(s, profile) {
+  const completed=state.problems.filter(p=>state.completions[s.id+'_'+p.id]);
+  const pending=state.problems.filter(p=>!state.completions[s.id+'_'+p.id]);
+  const color=COLORS[state.students.indexOf(s)%COLORS.length];
+  const initials=s.name.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);
+
+  let html=`<div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:18px">
+    <div style="width:52px;height:52px;border-radius:10px;background:${color}22;color:${color};display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;flex-shrink:0">${initials}</div>
+    <div style="flex:1">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px">${s.name}</div>
+      <div style="font-size:12px;color:var(--muted)">${s.roll} · <a href="https://leetcode.com/u/${s.lc}" target="_blank" style="color:var(--blue);text-decoration:none">${s.lc}</a></div>
+      ${profile?`<div style="font-size:11px;color:var(--muted);margin-top:3px">Ranking: #${profile.ranking?.toLocaleString()||'—'} ${profile.country?'· '+profile.country:''}</div>`:''}
+    </div>
+  </div>`;
+
+  if(profile) {
+    // SOLVED STATS
+    const total=profile.solved.total||0, easy=profile.solved.easy||0, med=profile.solved.medium||0, hard=profile.solved.hard||0;
+    html+=`<div class="lc-profile-grid">
+      <div class="lc-stat-box">
+        <div class="lc-stat-box-title">SOLVE STATS (ALL TIME)</div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <div>
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              ${donutArc(72,36,26,easy+med+hard||1,[
+                {val:easy,color:'#00e676'},{val:med,color:'#f0b429'},{val:hard,color:'#ff6b6b'}
+              ])}
+              <text x="36" y="40" text-anchor="middle" fill="#e8eaf0" font-family="Syne,sans-serif" font-weight="800" font-size="16">${total}</text>
+            </svg>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;flex:1">
+            <div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:#00e676">Easy</span><span>${easy}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:#f0b429">Medium</span><span>${med}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:#ff6b6b">Hard</span><span>${hard}</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="lc-stat-box">
+        <div class="lc-stat-box-title">STREAK & ACTIVITY</div>
+        <div style="display:flex;gap:16px">
+          <div style="text-align:center;flex:1">
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:var(--accent)">${profile.streak?.current||0}</div>
+            <div style="font-size:10px;color:var(--muted);letter-spacing:1px">🔥 CURRENT STREAK</div>
+          </div>
+          <div style="text-align:center;flex:1">
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:var(--blue)">${profile.streak?.totalActiveDays||0}</div>
+            <div style="font-size:10px;color:var(--muted);letter-spacing:1px">ACTIVE DAYS</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    // HEATMAP
+    if(profile.heatmap?.length) {
+      html+=`<div class="lc-stat-box" style="margin-bottom:14px">
+        <div class="lc-stat-box-title">SUBMISSION HEATMAP (LAST 52 WEEKS)</div>
+        <div class="heatmap-grid">${buildHeatmap(profile.heatmap)}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--muted)">
+          Less <div style="width:10px;height:10px;border-radius:2px;background:#1e2330"></div>
+          <div style="width:10px;height:10px;border-radius:2px;background:#00e67640"></div>
+          <div style="width:10px;height:10px;border-radius:2px;background:#00e67680"></div>
+          <div style="width:10px;height:10px;border-radius:2px;background:#00e676c0"></div>
+          <div style="width:10px;height:10px;border-radius:2px;background:#00e676"></div> More
+        </div>
+      </div>`;
+    }
+
+    // LANGUAGES
+    if(profile.languages?.length) {
+      const maxLang=profile.languages[0]?.problemsSolved||1;
+      const langColors=['#f0b429','#4fc3f7','#b39ddb','#00e676','#ff6b6b','#26c6da'];
+      html+=`<div class="lc-profile-grid" style="margin-bottom:14px">
+        <div class="lc-stat-box">
+          <div class="lc-stat-box-title">TOP LANGUAGES</div>
+          <div class="lang-bar">${profile.languages.map((l,i)=>`
+            <div class="lang-row">
+              <div class="lang-name">${l.languageName}</div>
+              <div class="lang-fill-wrap"><div class="lang-fill" style="width:${Math.round(l.problemsSolved/maxLang*100)}%;background:${langColors[i%langColors.length]}"></div></div>
+              <div class="lang-count">${l.problemsSolved}</div>
+            </div>`).join('')}
+          </div>
+        </div>
+        <div class="lc-stat-box">
+          <div class="lc-stat-box-title">TOP TOPICS</div>
+          <div class="tag-chips">${(profile.topTags||[]).map(t=>`<span class="tag-chip">${t.tagName} <span style="color:var(--muted2)">${t.problemsSolved}</span></span>`).join('')}</div>
+        </div>
+      </div>`;
+    }
+
+    // BADGES
+    if(profile.badges?.length) {
+      html+=`<div class="lc-stat-box" style="margin-bottom:14px">
+        <div class="lc-stat-box-title">BADGES (${profile.badges.length})</div>
+        <div class="badges-row">${profile.badges.slice(0,10).map(b=>`
+          <div class="lc-badge">
+            <span class="lc-badge-icon">🏅</span>
+            <span>${b.name}</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    // RECENT SUBMISSIONS
+    if(profile.recentSubmissions?.length) {
+      html+=`<div class="lc-stat-box" style="margin-bottom:14px">
+        <div class="lc-stat-box-title">RECENT SUBMISSIONS</div>
+        ${profile.recentSubmissions.map(r=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:14px">${r.accepted?'✅':'❌'}</span>
+            <a href="${r.url}" target="_blank" style="flex:1;font-size:11px;color:${r.accepted?'var(--text)':'var(--muted)'};text-decoration:none">${r.title}</a>
+            <span class="tag">${r.lang}</span>
+            <span style="font-size:10px;color:var(--muted)">${r.time}</span>
+          </div>`).join('')}
+      </div>`;
+    }
+  }
+
+  // ASSIGNMENT PROGRESS
+  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">`;
+  if(completed.length) {
+    html+=`<div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--green);margin-bottom:8px">✅ COMPLETED (${completed.length})</div>`;
+    html+=completed.map(p=>{
+      const c=state.completions[s.id+'_'+p.id];
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--muted);font-size:11px">#${p.id}</span>
+        <span style="flex:1;font-size:11px">${p.title}</span>
+        <span class="badge badge-${p.diff.toLowerCase()}">${p.diff}</span>
+        <span style="font-size:10px;color:var(--muted)">${c.time}</span>
+        ${c.lang?`<span class="tag">${c.lang}</span>`:''}
+      </div>`;
+    }).join('');
+    html+=`</div>`;
+  }
+  if(pending.length) {
+    html+=`<div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--accent2);margin-bottom:8px">⏳ PENDING (${pending.length})</div>`;
+    html+=pending.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);opacity:0.6">
+      <span style="color:var(--muted);font-size:11px">#${p.id}</span>
+      <span style="flex:1;font-size:11px">${p.title}</span>
+      <span class="badge badge-${p.diff.toLowerCase()}">${p.diff}</span>
+    </div>`).join('');
+    html+=`</div>`;
+  }
+  if(!state.problems.length) html+=`<div style="grid-column:1/-1"><div class="empty-state"><div class="empty-icon">📋</div><p>No problems assigned</p></div></div>`;
+  html+=`</div>`;
+
+  document.getElementById('studentModalBody').innerHTML=html;
+}
+
+// SVG donut arc helper
+function donutArc(size, cx, r, total, segments) {
+  let startAngle=-Math.PI/2; let svgs='';
+  const stroke=8;
+  segments.forEach(seg=>{
+    if(!seg.val) return;
+    const angle=(seg.val/total)*2*Math.PI;
+    const x1=cx+r*Math.cos(startAngle), y1=cx+r*Math.sin(startAngle);
+    const x2=cx+r*Math.cos(startAngle+angle), y2=cx+r*Math.sin(startAngle+angle);
+    const large=angle>Math.PI?1:0;
+    svgs+=`<path d="M${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2}" fill="none" stroke="${seg.color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
+    startAngle+=angle+0.04;
+  });
+  return svgs;
+}
+
+// Heatmap builder
+function buildHeatmap(heatmap) {
+  const weeks=[]; let week=[];
+  heatmap.forEach((day,i)=>{
+    week.push(day);
+    if(week.length===7||i===heatmap.length-1){weeks.push([...week]);week=[];}
+  });
+  return weeks.map(w=>`<div class="heatmap-col">${w.map(d=>{
+    const c=d.count;
+    const bg=c===0?'#1e2330':c<3?'#00e67640':c<6?'#00e67680':c<10?'#00e676c0':'#00e676';
+    return `<div class="heatmap-cell" style="background:${bg}" title="${d.date}: ${c} submissions"></div>`;
+  }).join('')}</div>`).join('');
+}
+
+// ===== STATUS =====
+async function toggleCompletion(sid, pid) {
+  const key=sid+'_'+pid;
+  const wasDone=!!state.completions[key];
+  if(wasDone) {
+    delete state.completions[key];
+    toast('Marked as pending');
+  } else {
+    const now=new Date();
+    state.completions[key]={time:now.toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'})};
+    toast('Marked as complete ✓');
+    await sendCompletionNotification(sid, pid);
+  }
+  save(); renderAll();
+}
+
+function renderStatusTable() {
+  const tbody=document.getElementById('statusTable');
+  const select=document.getElementById('filterProblem');
+  const cur=select.value;
+  select.innerHTML='<option value="">All Problems</option>'+state.problems.map(p=>`<option value="${p.id}" ${p.id===cur?'selected':''}>#${p.id} - ${p.title}</option>`).join('');
+
+  if(!state.students.length||!state.problems.length){
+    tbody.innerHTML='<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📊</div><p>Add students and problems first</p></div></td></tr>';
+    renderCompleters(cur); return;
+  }
+
+  const rows=[];
+  state.students.forEach(s=>{
+    const probs=cur?state.problems.filter(p=>p.id===cur):state.problems;
+    probs.forEach(p=>{
+      const key=s.id+'_'+p.id;
+      const done=!!state.completions[key];
+      const c=state.completions[key]||{};
+      rows.push({s,p,done,time:c.time||'—',lang:c.lang||'—',key});
+    });
+  });
+
+  tbody.innerHTML=rows.map(r=>`<tr>
+    <td style="font-weight:500">${r.s.name}</td>
+    <td style="color:var(--muted)">${r.s.roll}</td>
+    <td><a href="https://leetcode.com/u/${r.s.lc}" target="_blank" style="color:var(--blue);text-decoration:none">${r.s.lc}</a></td>
+    <td>
+      <div class="dropdown-wrap">
+        <button class="btn btn-secondary btn-sm">#${r.p.id} ${r.p.title} ▾</button>
+        <div class="dropdown-content">
+          <div class="dropdown-label">ALL PROBLEMS — ${r.s.name.toUpperCase()}</div>
+          ${state.problems.map(pp=>{
+            const k2=r.s.id+'_'+pp.id; const d2=!!state.completions[k2]; const c2=state.completions[k2]||{};
+            return `<div class="dropdown-item">
+              <span><span style="color:var(--muted);margin-right:6px">#${pp.id}</span>${pp.title}</span>
+              <span style="display:flex;align-items:center;gap:6px">
+                ${d2?`<span class="badge badge-done">✓</span><span style="font-size:10px;color:var(--muted)">${c2.time}</span>${c2.lang&&c2.lang!=='—'?`<span class="tag">${c2.lang}</span>`:''}`:
+                    `<span class="badge badge-pending">PENDING</span>`}
+              </span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </td>
+    <td><span class="badge ${r.done?'badge-done':'badge-pending'}">${r.done?'✓ DONE':'⏳ PENDING'}</span></td>
+    <td style="font-size:11px;color:var(--muted)">${r.time}</td>
+    <td style="font-size:10px;color:var(--muted)">${r.lang!=='—'?`<span class="tag">${r.lang}</span>`:r.lang}</td>
+    <td><button class="check-btn ${r.done?'done':''}" onclick="toggleCompletion('${r.s.id}','${r.p.id}')" title="${r.done?'Mark Pending':'Mark Done'}">${r.done?'✓':''}</button></td>
+  </tr>`).join('');
+
+  renderCompleters(cur);
+}
+
+function renderCompleters(filter) {
+  const cl=document.getElementById('completersList');
+  const pl=document.getElementById('pendingList');
+  if(!filter){
+    cl.innerHTML='<p style="font-size:11px;color:var(--muted)">Select a problem above</p>';
+    pl.innerHTML='<p style="font-size:11px;color:var(--muted)">Select a problem above</p>';
+    return;
+  }
+  const completers=state.students.filter(s=>state.completions[s.id+'_'+filter]);
+  const pending=state.students.filter(s=>!state.completions[s.id+'_'+filter]);
+  cl.innerHTML=completers.length?completers.map(s=>{
+    const c=state.completions[s.id+'_'+filter];
+    return `<div class="completer-row">
+      <div class="completer-dot"></div>
+      <div style="flex:1">${s.name}</div>
+      <div style="font-size:10px;color:var(--muted)">${s.roll}</div>
+      <div style="font-size:10px;color:var(--muted)">${c.time}</div>
+      ${c.lang&&c.lang!=='—'?`<span class="tag">${c.lang}</span>`:''}
+    </div>`;
+  }).join(''):'<p style="font-size:11px;color:var(--muted)">No one completed yet</p>';
+
+  pl.innerHTML=pending.length?pending.map(s=>`<div class="completer-row" style="opacity:0.5">
+    <div class="completer-dot" style="background:var(--muted)"></div>
+    <div style="flex:1">${s.name}</div>
+    <div style="font-size:10px;color:var(--muted)">${s.roll}</div>
+  </div>`).join(''):'<p style="font-size:11px;color:var(--green)">All done! 🎉</p>';
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  const total=state.problems.length*state.students.length;
+  const done=Object.keys(state.completions).length;
+  document.getElementById('stat-problems').textContent=state.problems.length;
+  document.getElementById('stat-students').textContent=state.students.length;
+  document.getElementById('stat-submissions').textContent=done;
+  document.getElementById('stat-completion').textContent=total?Math.round(done/total*100)+'%':'0%';
+
+  const tbody=document.getElementById('dashboardTable');
+  if(!state.problems.length){tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📋</div><p>No problems assigned yet</p></div></td></tr>';}
+  else{tbody.innerHTML=state.problems.map(p=>{
+    const dc=state.students.filter(s=>state.completions[s.id+'_'+p.id]).length;
+    const pct=state.students.length?Math.round(dc/state.students.length*100):0;
+    return `<tr>
+      <td style="color:var(--accent)">#${p.id}</td>
+      <td>${p.title}</td>
+      <td><span class="badge badge-${p.diff.toLowerCase()}">${p.diff}</span></td>
+      <td style="color:var(--muted);font-size:11px">${p.date}${p.deadline?` → <span style="color:var(--accent2)">${p.deadline}</span>`:''}</td>
+      <td>${dc} / ${state.students.length}</td>
+      <td style="width:110px"><div style="display:flex;align-items:center;gap:7px"><div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:${pct}%"></div></div><span style="font-size:10px;color:var(--muted);min-width:26px">${pct}%</span></div></td>
+    </tr>`;
+  }).join('');}
+
+  const lb=document.getElementById('leaderboard');
+  if(!state.students.length){lb.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🏆</div><p>Add students to see leaderboard</p></div></td></tr>';}
+  else{
+    const ranked=[...state.students].map(s=>({...s,
+      solved:state.problems.filter(p=>state.completions[s.id+'_'+p.id]).length,
+      streak:state.lcCache?.[s.lc]?.streak?.current||0,
+      last:Object.entries(state.completions).filter(([k])=>k.startsWith(s.id+'_')).map(([,v])=>v.time).pop()||'—'
+    })).sort((a,b)=>b.solved-a.solved);
+    const medals=['🥇','🥈','🥉'];
+    lb.innerHTML=ranked.map((s,i)=>`<tr>
+      <td>${medals[i]||(i+1)}</td>
+      <td style="font-weight:500">${s.name}</td>
+      <td style="color:var(--muted)">${s.roll}</td>
+      <td><span style="color:var(--green);font-family:'Syne',sans-serif;font-weight:700">${s.solved}</span> / ${state.problems.length}</td>
+      <td style="color:var(--accent)">${s.streak}🔥</td>
+      <td style="font-size:11px;color:var(--muted)">${s.last}</td>
+    </tr>`).join('');
+  }
+}
+
+// ===== EMAIL / NOTIFICATIONS =====
+function loadEmailConfig() {
+  const cfg=state.emailConfig||{};
+  ['host','port','user','pass','staff'].forEach(k=>{
+    const el=document.getElementById('cfg-'+k);
+    if(el&&cfg[k]) el.value=cfg[k];
+  });
+  renderNotifLog();
+}
+
+function saveEmailConfig() {
+  state.emailConfig={
+    host:document.getElementById('cfg-host').value.trim()||'smtp.gmail.com',
+    port:document.getElementById('cfg-port').value||'587',
+    secure:document.getElementById('cfg-secure').value,
+    user:document.getElementById('cfg-user').value.trim(),
+    pass:document.getElementById('cfg-pass').value.trim(),
+    staff:document.getElementById('cfg-staff').value.trim(),
+  };
+  save(); toast('Email config saved ✓');
+}
+
+async function testEmail() {
+  if(!serverOnline) return toast('Server offline','error');
+  saveEmailConfig();
+  try {
+    const r=await fetch(`${API}/test-email`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:state.emailConfig.staff})});
+    const d=await r.json();
+    if(d.ok) toast('Test email sent! Check your inbox ✓');
+    else toast('Failed: '+d.error,'error');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+async function sendCompletionNotification(sid, pid) {
+  if(!document.getElementById('notif-on-complete')?.checked) return;
+  const s=state.students.find(x=>x.id===sid);
+  const p=state.problems.find(x=>x.id===pid);
+  if(!s||!p) return;
+
+  const completedCount=state.students.filter(st=>state.completions[st.id+'_'+pid]).length;
+  const payload={
+    type:'completed',
+    studentName:s.name, studentEmail:document.getElementById('notif-student-email')?.checked?s.email:'',
+    studentRoll:s.roll, lcUsername:s.lc,
+    problemTitle:p.title, problemId:p.id, diff:p.diff,
+    solvedAt:state.completions[sid+'_'+pid]?.time||new Date().toLocaleString(),
+    allStudents:state.students.length, completedCount,
+  };
+
+  // Log locally always
+  addNotifLog({icon:'✅',text:`${s.name} completed #${p.id} ${p.title}`,time:payload.solvedAt});
+
+  if(!serverOnline) return;
+  try {
+    const r=await fetch(`${API}/notify`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d=await r.json();
+    if(d.sent>0) addNotifLog({icon:'✉',text:`Email sent to staff${s.email?' + student':''}`,time:new Date().toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'})});
+  } catch(e) { console.warn('Notify error',e.message); }
+}
+
+function addNotifLog(entry) {
+  if(!state.notifLog) state.notifLog=[];
+  state.notifLog.unshift({...entry, id:Date.now()});
+  if(state.notifLog.length>50) state.notifLog.pop();
+  save(); renderNotifLog();
+}
+function clearLog() { state.notifLog=[]; save(); renderNotifLog(); }
+function renderNotifLog() {
+  const el=document.getElementById('notifLog');
+  if(!el) return;
+  if(!state.notifLog?.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>No notifications yet</p></div>';return;}
+  el.innerHTML=state.notifLog.map(n=>`<div class="notif-item">
+    <div class="notif-icon">${n.icon||'📬'}</div>
+    <div style="flex:1"><div>${n.text}</div><div class="notif-time">${n.time}</div></div>
+  </div>`).join('');
+}
+
+// ===== BACKEND API =====
+async function checkServer() {
+  try { const r=await fetch(API+'/health',{signal:AbortSignal.timeout(2000)}); serverOnline=r.ok; } catch { serverOnline=false; }
+  const badge=document.getElementById('serverBadge');
+  if(badge){ badge.textContent=serverOnline?'● SERVER ONLINE':'○ SERVER OFFLINE'; badge.style.color=serverOnline?'var(--green)':'var(--accent2)'; }
+}
+
+async function verifyLCProfile(username) {
+  if(!serverOnline) return null;
+  try { const r=await fetch(`${API}/profile/${username}`); return r.ok?await r.json():null; } catch { return null; }
+}
+
+async function syncFromLeetCode() {
+  if(!serverOnline) return toast('Server offline. Run server.js first.','error');
+  if(!state.students.length||!state.problems.length) return toast('Add students and problems first','error');
+  const btn=document.getElementById('syncBtn');
+  btn.textContent='⟳ SYNCING...'; btn.disabled=true;
+  try {
+    const r=await fetch(`${API}/bulk-check`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({students:state.students,problems:state.problems})});
+    const d=await r.json();
+    if(d.completions) {
+      // Check for new completions to notify
+      const newKeys=Object.keys(d.completions).filter(k=>!state.completions[k]);
+      Object.assign(state.completions,d.completions);
+      save();
+      if(!document.getElementById('notif-manual-only')?.checked) {
+        for(const key of newKeys) {
+          const [sid,pid]=key.split('_');
+          await sendCompletionNotification(sid,pid);
+        }
+      }
+      toast(`Synced! ${Object.keys(d.completions).length} completions found ✓`);
+      renderAll();
+    }
+  } catch(e) { toast('Sync failed: '+e.message,'error'); }
+  finally { btn.textContent='⟳ SYNC LC'; btn.disabled=false; }
+}
+
+async function syncStudentProfile(sid, updateModal=false) {
+  if(!serverOnline) return toast('Server offline','error');
+  const s=state.students.find(x=>x.id===sid);
+  if(!s) return;
+  toast(`Fetching ${s.lc}...`);
+  const profile=await verifyLCProfile(s.lc);
+  if(!profile) return toast(`User "${s.lc}" not found`,'error');
+
+  if(!state.lcCache) state.lcCache={};
+  state.lcCache[s.lc]=profile;
+
+  // Check assignment completions
+  for(const p of state.problems) {
+    const slug=p.title.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+    const key=s.id+'_'+p.id;
+    const accepted=profile.recentSubmissions?.find(r=>r.slug===slug&&r.accepted);
+    if(accepted&&!state.completions[key]) {
+      state.completions[key]={time:accepted.time,lang:accepted.lang,source:'leetcode'};
+      await sendCompletionNotification(s.id,p.id);
+    }
+  }
+  save();
+  toast(`${s.name}: ${profile.solved.total} solved, ${profile.streak.current}🔥 streak ✓`);
+  if(updateModal && modalStudentId===sid) renderStudentModal(s,profile);
+  renderAll();
+}
+
+// ===== SEARCH =====
+function handleSearch(q) {
+  if(!q){renderAll();return;}
+  q=q.toLowerCase();
+  if(currentTab==='students') document.querySelectorAll('.student-card').forEach(c=>{c.style.display=c.textContent.toLowerCase().includes(q)?'':'none';});
+  else if(currentTab==='problems') document.querySelectorAll('.prob-item').forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';});
+}
+
+
+// ===== BULK IMPORT =====
+let bulkFormat = 'name,roll,lc';
+let bulkParsed = [];
+
+function switchMode(mode) {
+  const single = document.getElementById('panelSingle');
+  const bulk = document.getElementById('panelBulk');
+  const btnS = document.getElementById('modeSingle');
+  const btnB = document.getElementById('modeBulk');
+  if(mode === 'single') {
+    single.style.display = ''; bulk.style.display = 'none';
+    btnS.style.background = 'var(--accent)'; btnS.style.color = '#0a0c10';
+    btnB.style.background = 'var(--surface2)'; btnB.style.color = 'var(--muted)';
+  } else {
+    single.style.display = 'none'; bulk.style.display = '';
+    btnB.style.background = 'var(--accent)'; btnB.style.color = '#0a0c10';
+    btnS.style.background = 'var(--surface2)'; btnS.style.color = 'var(--muted)';
+  }
+}
+
+function setFormat(fmt) {
+  bulkFormat = fmt;
+  ['fmt1','fmt2','fmt3'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.className = 'btn btn-secondary btn-sm';
+    el.style.background = '';
+  });
+  const fmtMap = {'name,roll,lc':'fmt1','name,roll,lc,email':'fmt2','roll,name,lc':'fmt3'};
+  const active = document.getElementById(fmtMap[fmt]);
+  if(active) { active.className = 'btn btn-primary btn-sm'; }
+  // re-preview if data exists
+  const input = document.getElementById('bulkInput');
+  if(input && input.value.trim()) previewBulk();
+}
+
+function parseBulkLine(line) {
+  // Support comma, semicolon, tab separators
+  let parts;
+  if(line.includes('\t')) parts = line.split('\t');
+  else if(line.includes(';')) parts = line.split(';');
+  else parts = line.split(',');
+  parts = parts.map(p => p.trim()).filter(Boolean);
+  if(parts.length < 3) return null;
+
+  const fields = bulkFormat.split(',');
+  const obj = {};
+  fields.forEach((f, i) => { if(parts[i]) obj[f] = parts[i].trim(); });
+
+  // Ensure required fields
+  if(!obj.name || !obj.roll || !obj.lc) return null;
+  return obj;
+}
+
+function previewBulk() {
+  const raw = document.getElementById('bulkInput').value.trim();
+  if(!raw) return toast('Paste some data first', 'error');
+
+  const lines = raw.split('\n').filter(l => l.trim());
+  bulkParsed = [];
+  const tbody = document.getElementById('bulkPreviewBody');
+  const preview = document.getElementById('bulkPreview');
+  const stats = document.getElementById('bulkPreviewStats');
+  const title = document.getElementById('bulkPreviewTitle');
+
+  let ok = 0, skip = 0, dup = 0;
+  const rows = lines.map((line, i) => {
+    const parsed = parseBulkLine(line);
+    if(!parsed) { skip++; return `<tr><td style="color:var(--muted)">${i+1}</td><td colspan="4" style="color:var(--accent2);font-size:11px">${line.substring(0,60)}...</td><td><span class="badge badge-hard">SKIP</span></td></tr>`; }
+
+    const isDup = state.students.some(s => s.roll === parsed.roll);
+    if(isDup) { dup++;
+      return `<tr style="opacity:0.5"><td style="color:var(--muted)">${i+1}</td><td>${parsed.name}</td><td>${parsed.roll}</td><td>${parsed.lc}</td><td>${parsed.email||'—'}</td><td><span class="badge badge-medium">DUP</span></td></tr>`;
+    }
+
+    bulkParsed.push(parsed);
+    ok++;
+    return `<tr><td style="color:var(--muted)">${i+1}</td><td>${parsed.name}</td><td style="color:var(--accent)">${parsed.roll}</td><td style="color:var(--blue)">${parsed.lc}</td><td style="color:var(--muted)">${parsed.email||'—'}</td><td><span class="badge badge-done">✓ OK</span></td></tr>`;
+  });
+
+  tbody.innerHTML = rows.join('');
+  preview.style.display = '';
+  title.textContent = `Preview — ${lines.length} rows`;
+  stats.textContent = `✓ ${ok} valid · ⚠ ${skip} invalid · ⟳ ${dup} duplicate`;
+
+  const importBtn = document.getElementById('bulkImportBtn');
+  importBtn.disabled = ok === 0;
+  importBtn.textContent = ok > 0 ? `⬇ IMPORT ${ok} STUDENTS` : '⬇ IMPORT ALL';
+}
+
+function importBulk() {
+  if(!bulkParsed.length) return toast('No valid students to import', 'error');
+
+  let added = 0;
+  bulkParsed.forEach(p => {
+    if(state.students.find(s => s.roll === p.roll)) return;
+    state.students.push({
+      id: 'S' + Date.now() + Math.random().toString(36).slice(2,6),
+      name: p.name, roll: p.roll, lc: p.lc,
+      email: p.email || '',
+      added: new Date().toLocaleDateString('en-IN')
+    });
+    added++;
+  });
+
+  save();
+  toast(`${added} students imported successfully ✓`);
+  bulkParsed = [];
+  document.getElementById('bulkInput').value = '';
+  document.getElementById('bulkPreview').style.display = 'none';
+  document.getElementById('bulkImportBtn').disabled = true;
+  document.getElementById('bulkImportBtn').textContent = '⬇ IMPORT ALL';
+  switchMode('single');
+  renderAll();
+}
+
+function clearAllStudents() {
+  if(!confirm('Delete ALL students? This cannot be undone.')) return;
+  state.students = [];
+  state.completions = {};
+  save(); toast('All students cleared'); renderAll();
+}
+
+// Show/hide clear all button based on student count
+const _origRenderStudents = renderStudents;
+renderStudents = function() {
+  _origRenderStudents();
+  const btn = document.getElementById('clearStudentsBtn');
+  if(btn) btn.style.display = state.students.length > 0 ? '' : 'none';
+};
+
+// ===== UTILS =====
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function toast(msg, type='success') {
+  const c=document.getElementById('toastContainer');
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<span class="toast-icon">${type==='success'?'✓':'⚠'}</span>${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(),3200);
+}
+function renderAll() { renderDashboard(); renderProblems(); renderStudents(); renderStatusTable(); renderNotifLog(); }
+
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay').forEach(o=>o.classList.remove('open'));});
+
+// ===== SEED DATA =====
+if(!state.problems.length&&!state.students.length) {
+  state.problems=[
+    {id:'1',title:'Two Sum',diff:'Easy',topic:'Array',date:'13/03/2026',deadline:'2026-03-20'},
+    {id:'121',title:'Best Time to Buy and Sell Stock',diff:'Easy',topic:'DP',date:'13/03/2026',deadline:'2026-03-20'},
+    {id:'200',title:'Number of Islands',diff:'Medium',topic:'Graph',date:'13/03/2026',deadline:'2026-03-25'},
+  ];
+  state.students=[
+    {id:'S1',name:'Aryan Sharma',roll:'CS2024001',lc:'aryan_sharma',email:'aryan@college.edu',added:'13/03/2026'},
+    {id:'S2',name:'Priya Nair',roll:'CS2024002',lc:'priya_codes',email:'priya@college.edu',added:'13/03/2026'},
+    {id:'S3',name:'Kiran Patel',roll:'CS2024003',lc:'kiranpatel99',email:'kiran@college.edu',added:'13/03/2026'},
+  ];
+  state.completions={'S1_1':{time:'13/03/26, 9:14 AM',lang:'python3'},'S1_121':{time:'13/03/26, 10:32 AM',lang:'python3'},'S2_1':{time:'13/03/26, 11:05 AM',lang:'java'},'S3_1':{time:'13/03/26, 2:47 PM',lang:'cpp'},'S3_200':{time:'13/03/26, 3:15 PM',lang:'cpp'}};
+  save();
+}
+
+checkServer();
+setInterval(checkServer, 15000);
+renderAll();
+</script>
+</body>
+</html>

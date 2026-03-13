@@ -1,0 +1,19 @@
+{
+  "name": "codetrack",
+  "version": "2.0.0",
+  "description": "LeetCode Assignment Tracker — with email notifications & rich stats",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0",
+    "nodemailer": "^6.9.8"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
